@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  pending
+  accepted
+  rejected
+}
+
+enum GameStatus {
+  ongoing
+  completed
+  aborted
+}
+
+enum PlayAs {
+  white
+  black
+  random
+}
+
+enum Color {
+  white
+  black
+}
+
+enum Role {
+  pawn
+  bishop
+  knight
+  rook
+  queen
+  king
+}
+
+enum Turn {
+  playerWhite
+  playerBlack
+}
+
+enum Castle {
+  whiteQueen
+  whiteKing
+  blackQueen
+  blackKing
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  username     String       @unique
+  password     String?
+  avatar       String?
+  elo          Int          @default(400)
+  country      String       @default("us")
+  googleId     String?
+  friends      Friend[]     @relation("UserFriends")
+  friended     Friend[]     @relation("UserFriended")
+  invitations  Invitation[] @relation("UserInvitations")
+  invited      Invitation[] @relation("UserInvited")
+  gamesAsWhite Game[]       @relation("PlayerWhite")
+  gamesAsBlack Game[]       @relation("PlayerBlack")
+  gamesWon     Game[]       @relation("winner")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Friend {
+  id       String @id @default(uuid())
+  user     User   @relation("UserFriends", fields: [userId], references: [id])
+  userId   String
+  friend   User   @relation("UserFriended", fields: [friendId], references: [id])
+  friendId String
+  status   Status @default(pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, friendId])
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  from      User     @relation("UserInvitations", fields: [fromId], references: [id], onDelete: Cascade)
+  fromId    String
+  to        User     @relation("UserInvited", fields: [toId], references: [id], onDelete: Cascade)
+  toId      String
+  duration  BigInt
+  rated     Boolean  @default(true)
+  playAs    PlayAs   @default(random)
+  status    Status   @default(pending)
+  invitedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Game {
+  id            String     @id @default(uuid())
+  playerWhite   User       @relation("PlayerWhite", fields: [playerWhiteId], references: [id], onDelete: Cascade)
+  playerWhiteId String
+  playerBlack   User       @relation("PlayerBlack", fields: [playerBlackId], references: [id], onDelete: Cascade)
+  playerBlackId String
+  duration      BigInt
+  rated         Boolean    @default(true)
+  startedAt     DateTime   @default(now())
+  status        GameStatus @default(ongoing)
+  history       String[]
+  drawOffer     String?
+  currentPosition  String[]
+  winner User? @relation("winner", fields: [winnerId], references: [id], onDelete: Cascade)
+  winnerId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
