@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   ParseIntPipe,
   Post,
   Query,
@@ -29,6 +30,15 @@ export class FriendsController {
       { page, limit },
       search,
     );
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async findFriendById(
+    @Request() req: { user: UserPayloadDto },
+    @Param('id') id: string,
+  ) {
+    return await this.friendsService.findFriendById(req.user, id);
   }
 
   @Get('suggestions')

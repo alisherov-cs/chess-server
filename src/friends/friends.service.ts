@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Status } from '@prisma/client';
 import { UserPayloadDto } from 'src/auth/dto/payload.dto';
 import { PaginationDto } from 'src/dto/pagination.dto';
@@ -59,6 +63,23 @@ export class FriendsService {
       ),
       pagination: { page, limit, total, totalPages },
     };
+  }
+
+  async findFriendById({ userId }: UserPayloadDto, friendId: string) {
+    const existsAsUser = await this.prisma.friend.findUnique({
+      where: { userId_friendId: { userId, friendId } },
+      include: { friend: true },
+    });
+
+    const existsAsFriend = await this.prisma.friend.findUnique({
+      where: { userId_friendId: { userId: friendId, friendId: userId } },
+      include: { user: true },
+    });
+
+    if (!existsAsUser && !existsAsFriend)
+      throw new NotFoundException('friend not found!');
+
+    return existsAsUser?.friend || existsAsFriend?.user;
   }
 
   async findSuggestions({ userId }: UserPayloadDto, search: string) {
