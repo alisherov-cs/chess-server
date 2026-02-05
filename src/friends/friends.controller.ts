@@ -32,13 +32,10 @@ export class FriendsController {
     );
   }
 
-  @Get(':id')
+  @Post('readAll')
   @UseGuards(JwtAuthGuard)
-  async findFriendById(
-    @Request() req: { user: UserPayloadDto },
-    @Param('id') id: string,
-  ) {
-    return await this.friendsService.findFriendById(req.user, id);
+  async readAllIncomingRequests(@Request() req: { user: UserPayloadDto }) {
+    return await this.friendsService.readAllIncomingRequests(req.user);
   }
 
   @Get('suggestions')
@@ -101,5 +98,14 @@ export class FriendsController {
       page,
       limit,
     });
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async findFriendById(
+    @Request() req: { user: UserPayloadDto },
+    @Param('id') id: string,
+  ) {
+    return await this.friendsService.findFriendById(req.user, id);
   }
 }

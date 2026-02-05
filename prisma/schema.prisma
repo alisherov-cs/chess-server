@@ -20,6 +20,7 @@ enum Status {
 }
 
 enum GameStatus {
+  pending
   ongoing
   completed
   aborted
@@ -85,6 +86,7 @@ model Friend {
   friend   User   @relation("UserFriended", fields: [friendId], references: [id])
   friendId String
   status   Status @default(pending)
+  read     Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -98,11 +100,14 @@ model Invitation {
   fromId    String
   to        User     @relation("UserInvited", fields: [toId], references: [id], onDelete: Cascade)
   toId      String
-  duration  BigInt
+  duration  Int
+  timeId    String
   rated     Boolean  @default(true)
   playAs    PlayAs   @default(random)
   status    Status   @default(pending)
   invitedAt DateTime @default(now())
+  read      Boolean  @default(false)
+  gameId    String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -114,13 +119,14 @@ model Game {
   playerWhiteId String
   playerBlack   User       @relation("PlayerBlack", fields: [playerBlackId], references: [id], onDelete: Cascade)
   playerBlackId String
-  duration      BigInt
+  duration      Int
+  timeId        String
   rated         Boolean    @default(true)
   startedAt     DateTime   @default(now())
   status        GameStatus @default(ongoing)
   history       String[]
   drawOffer     String?
-  currentPosition  String[]
+  currentPosition  String[] @default(["wra1","wnb1","wbc1","wqd1","wke1","wbf1","wng1","wrh1","wpa2","wpb2","wpc2","wpd2","wpe2","wpf2","wpg2","wph2","bra8","bnb8","bbc8","bqd8","bke8","bbf8","bng8","brh8","bpa7","bpb7","bpc7","bpd7","bpe7","bpf7","bpg7","bph7"])
   winner User? @relation("winner", fields: [winnerId], references: [id], onDelete: Cascade)
   winnerId String?
 

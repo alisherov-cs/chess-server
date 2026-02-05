@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Status } from '@prisma/client';
 import { UserPayloadDto } from 'src/auth/dto/payload.dto';
 import { PaginationDto } from 'src/dto/pagination.dto';
@@ -10,7 +11,10 @@ import { PrismaService } from 'src/services/prisma/prisma.service';
 
 @Injectable()
 export class FriendsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   async findFriends(
     { userId }: UserPayloadDto,
@@ -113,6 +117,8 @@ export class FriendsService {
 
     if (exists) throw new BadRequestException('friend already exists');
 
+    this.eventEmitter.emit('incomingFriendRequest', friendId);
+
     return await this.prisma.friend.create({ data: { userId, friendId } });
   }
 
@@ -122,6 +128,9 @@ export class FriendsService {
   ) {
     const total = await this.prisma.friend.count({
       where: { friendId: userId, status: Status.pending },
+    });
+    const unRead = await this.prisma.friend.count({
+      where: { friendId: userId, status: Status.pending, read: false },
     });
     const totalPages = (page - 1) * limit;
     const incomingRequests = await this.prisma.friend.findMany({
@@ -136,8 +145,15 @@ export class FriendsService {
 
     return {
       data: incomingRequests,
-      pagination: { page, limit, total, totalPages },
+      pagination: { page, limit, total, totalPages, unRead },
     };
+  }
+
+  async readAllIncomingRequests({ userId }: UserPayloadDto) {
+    return await this.prisma.friend.updateMany({
+      where: { friendId: userId, status: Status.pending, read: false },
+      data: { read: true },
+    });
   }
 
   async findOutgoingRequests(
